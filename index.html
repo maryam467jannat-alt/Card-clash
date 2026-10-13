@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<meta name="theme-color" content="#101827">
+<title>Card Clash</title>
+
+<style>
+*{box-sizing:border-box}
+body{
+  margin:0;min-height:100vh;padding:14px 10px 25px;
+  background:radial-gradient(circle at top,#263c60,#080d18 75%);
+  color:#fff;font-family:Arial,sans-serif;text-align:center
+}
+header{padding:8px}
+.logo{font-size:34px;font-weight:1000;color:#ffd52a;
+  text-shadow:0 3px #9b4c00;letter-spacing:1px}
+.subtitle{color:#bdc9dc;font-size:13px}
+.panel{
+  max-width:500px;margin:12px auto;padding:16px;
+  border-radius:22px;background:#172337;
+  border:1px solid #34445f;box-shadow:0 12px 35px #0007
+}
+input{
+  width:100%;padding:13px;margin:5px 0;border:0;
+  border-radius:10px;font-size:16px;background:#fff;color:#111
+}
+.action{
+  width:100%;padding:13px;margin:5px 0;border:0;
+  border-radius:10px;background:#ffd52a;color:#151923;
+  font-weight:bold;font-size:16px;cursor:pointer
+}
+.action:active{transform:scale(.98)}
+.secondary{background:#34445f;color:#fff}
+.status{font-size:14px;line-height:1.5;overflow-wrap:anywhere;color:#dce7fa}
+.divider{border:0;border-top:1px solid #3a4961;margin:15px 0}
+.game-title{font-size:14px;color:#bdc9dc;margin:12px 0 5px}
+.table{
+  min-height:175px;padding:14px 8px;border-radius:18px;
+  background:radial-gradient(ellipse,#126b51,#064331);
+  border:4px solid #26795c;display:flex;
+  flex-direction:column;align-items:center;justify-content:center
+}
+.piles{display:flex;align-items:center;justify-content:center;gap:24px;flex-wrap:wrap}
+.pile-label{font-size:12px;color:#d5f5e8;margin-bottom:6px}
+#hand{
+  display:flex;flex-wrap:wrap;justify-content:center;
+  align-items:center;gap:9px;padding:12px 0
+}
+.card{
+  position:relative;width:78px;height:119px;flex:0 0 78px;
+  border:3px solid #fff;border-radius:12px;overflow:hidden;
+  box-shadow:0 5px 10px #0006;padding:3px;cursor:pointer;
+  transition:transform .15s
+}
+.card:active{transform:translateY(-5px) scale(.97)}
+.card.red{background:#ed2638}
+.card.blue{background:#1675e8}
+.card.green{background:#16a34a}
+.card.yellow{background:#facc15}
+.card.wild{background:#171923}
+.card::before{
+  content:"";position:absolute;left:8%;top:10%;
+  width:84%;height:80%;background:#fff;border-radius:50%;
+  transform:rotate(28deg)
+}
+.card.red::before{background:#ffc0c6}
+.card.blue::before{background:#c0e0ff}
+.card.green::before{background:#baf4cb}
+.card.yellow::before{background:#fff1a6}
+.card.wild::before{
+  background:conic-gradient(#ed2638 0 25%,#facc15 25% 50%,
+  #16a34a 50% 75%,#1675e8 75% 100%)
+}
+.corner{
+  position:absolute;z-index:2;left:5px;top:3px;
+  color:white;font-size:12px;font-weight:bold
+}
+.card.yellow .corner{color:#171923}
+.face{
+  position:relative;z-index:1;width:100%;height:100%;
+  display:flex;align-items:center;justify-content:center;
+  color:#101827;font-size:37px;font-weight:1000;
+  font-style:italic;text-shadow:1px 1px #fff8;
+  overflow-wrap:anywhere
+}
+.card.yellow .face{color:#171923}
+.card.wild .face{color:white;text-shadow:1px 1px #111}
+.top-card{width:91px;height:137px;flex-basis:91px;cursor:default}
+.top-card .face{font-size:43px}
+.top-card .corner{font-size:13px}
+.small{font-size:12px;color:#bdc9dc}
+.hidden{display:none!important}
+#message{min-height:24px}
+footer{font-size:11px;color:#8291a9;padding:18px}
+</style>
+</head>
+
+<body>
+<header>
+  <div class="logo">🃏 CARD CLASH</div>
+  <div class="subtitle">ONLINE MULTIPLAYER CARD GAME</div>
+</header>
+
+<section class="panel">
+  <input id="name" maxlength="18" placeholder="তোমার নাম লেখো">
+
+  <button class="action" onclick="createRoom()">＋ Create Room</button>
+
+  <input id="code" maxlength="10" placeholder="Room Code লেখো">
+  <button class="action secondary" onclick="joinRoom()">Join Room</button>
+
+  <hr class="divider">
+  <div id="roomInfo" class="status">Room: তৈরি হয়নি</div>
+  <div id="status" class="status">সার্ভারে সংযোগ হচ্ছে...</div>
+</section>
+
+<section id="game" class="panel hidden">
+  <div class="piles">
+    <div>
+      <div class="pile-label">OPPONENT</div>
+      <div id="opponentCount" class="status">🂠 0 cards</div>
+    </div>
+    <div>
+      <div class="pile-label">CENTER TABLE</div>
+      <div class="small" id="currentColor">Current color: —</div>
+    </div>
+  </div>
+
+  <div class="table">
+    <div class="piles">
+      <div>
+        <div class="pile-label">TOP CARD</div>
+        <div id="topCard"></div>
+      </div>
+    </div>
+  </div>
+
+  <p id="turn" class="status">অপেক্ষা করো...</p>
+  <hr class="divider">
+
+  <div class="game-title">YOUR CARDS</div>
+  <div id="hand"></div>
+
+  <button class="action" onclick="drawCard()">＋ Draw Card</button>
+  <p class="small">নিজের চাল হলে কার্ড বেছে নাও।</p>
+</section>
+
+<footer>Card Clash · Play together, clash for victory!</footer>
+
+<script src="/socket.io/socket.io.js"></script>
+<script>
+const socket = io();
+const $ = id => document.getElementById(id);
+let currentHand = [];
+let myTurn = false;
+
+const symbols = {
+  "Skip":"⊘",
+  "Reverse":"⇄",
+  "Draw 2":"+2",
+  "Wild":"✦",
+  "Wild +4":"+4"
+};
+
+socket.on("connect",()=>{
+  $("status").textContent="✅ সার্ভারে সংযোগ হয়েছে!";
+});
+
+socket.on("connect_error",()=>{
+  $("status").textContent="❌ সার্ভারে সংযোগ হচ্ছে না। সার্ভার চালু আছে কি দেখো।";
+});
+
+function createRoom(){
+  const name=$("name").value.trim();
+  if(!name){
+    $("status").textContent="আগে তোমার নাম লেখো।";
+    $("name").focus();
+    return;
+  }
+  socket.emit("createRoom");
+  $("status").textContent="Room তৈরি হচ্ছে...";
+}
+
+function joinRoom(){
+  const name=$("name").value.trim();
+  const code=$("code").value.trim().toUpperCase();
+
+  if(!name){
+    $("status").textContent="আগে তোমার নাম লেখো।";
+    $("name").focus();
+    return;
+  }
+  if(!code){
+    $("status").textContent="Room Code লেখো।";
+    $("code").focus();
+    return;
+  }
+
+  $("code").value=code;
+  socket.emit("joinRoom",{code});
+  $("status").textContent="Room-এ যোগ দেওয়া হচ্ছে...";
+}
+
+socket.on("roomCreated",data=>{
+  $("code").value=data.code;
+  $("roomInfo").textContent="Room Code: "+data.code;
+  $("status").textContent="✅ Room তৈরি হয়েছে! বন্ধুকে Room Code দাও।";
+});
+
+socket.on("roomMessage",message=>{
+  $("status").textContent=
+    typeof message==="string"?message:JSON.stringify(message);
+});
+
+socket.on("roomError",data=>{
+  $("status").textContent="⚠️ "+(data.message||"Room-এ সমস্যা হয়েছে।");
+});
+
+function makeCard(card, top = false) {
+  const button = document.createElement("button");
+  button.type = "button";
+  button.className = "card " + card.color +
+    (top ? " top-card" : "");
+
+  const symbols = {
+    "Skip": "⊘",
+    "Reverse": "⇄",
+    "Draw 2": "+2",
+    "Wild": "✦",
+    "Wild +4": "+4"
+  };
+
+  const corner = document.createElement("span");
+  corner.className = "corner";
+  corner.textContent = symbols[card.value] || card.value;
+
+  const face = document.createElement("span");
+  face.className = "face";
+  face.textContent = symbols[card.value] || card.value;
+
+  button.append(corner, face);
+  return button;
+}
+
+function renderHand() {
+  const handArea = $("hand");
+  handArea.replaceChildren();
+
+  currentHand.forEach((card, index) => {
+    const button = makeCard(card);
+
+    button.type = "button";
+    button.style.pointerEvents = "auto";
+    button.style.touchAction = "manipulation";
+
+    button.addEventListener("click", () => {
+      $("status").textContent =
+        "কার্ডে চাপ দেওয়া হয়েছে: " + card.value;
+      playCard(index, card);
+    });
+
+    handArea.appendChild(button);
+  });
+}
+
+socket.on("gameState",state=>{
+  $("game").classList.remove("hidden");
+  $("roomInfo").textContent="Room Code: "+state.code;
+  $("status").textContent=state.message||state.status;
+  $("opponentCount").textContent="🂠 "+state.opponentCount+" cards";
+  $("currentColor").textContent="Current color: "+(state.currentColor||"—");
+
+  $("topCard").replaceChildren();
+  if(state.topCard){
+    $("topCard").appendChild(makeCard(state.topCard,true));
+  }
+
+  currentHand=state.hand||[];
+  myTurn=state.isMyTurn;
+  renderHand();
+
+  if(state.winner){
+    $("turn").textContent=
+      state.winner===socket.id?"🏆 তুমি জিতেছ!":"🏁 খেলা শেষ হয়েছে!";
+  }else{
+    $("turn").textContent=myTurn?"🎯 এখন তোমার চাল!":"⏳ প্রতিপক্ষের চাল";
+  }
+});
+
+function playCard(index,card){
+  if(!myTurn){
+    $("status").textContent="এখন তোমার চাল নয়।";
+    return;
+  }
+
+  let color;
+  if(card.color==="wild"){
+    color=prompt("রং বেছে নাও: red, blue, green, yellow","red");
+    if(!["red","blue","green","yellow"].includes(color))return;
+  }
+
+  socket.emit("playCard",{index,color});
+}
+
+function drawCard(){
+  if(!myTurn){
+    $("status").textContent="এখন তোমার চাল নয়।";
+    return;
+  }
+  socket.emit("drawCard");
+}
+</script>
+</body>
+</html>
